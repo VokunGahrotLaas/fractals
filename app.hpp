@@ -27,6 +27,12 @@ protected:
 	void events(void);
 	void draw(void);
 
+	void clean(void);
+	void quit(void);
+	void force_quit(void);
+
+	void toggle_fullscreen(void);
+
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	std::thread* update_loop_thread;
@@ -34,6 +40,7 @@ protected:
 	int exit_code;
 	int w;
 	int h;
+	bool fullscreen;
 	double framerate;
 	SDL_Color background_color;
 };
@@ -44,8 +51,8 @@ namespace fractals {
 
 App::App(void)
 	: window(nullptr), renderer(nullptr), update_loop_thread(nullptr),
-	  looping(false), exit_code(EXIT_SUCCESS), w(0), h(0), framerate(60),
-	  background_color({ 0, 0, 0, 255 }) {
+	  looping(false), exit_code(EXIT_SUCCESS), w(0), h(0), fullscreen(true),
+	  framerate(60), background_color({ 0, 0, 0, 255 }) {
 	//
 }
 
@@ -56,23 +63,24 @@ App::~App(void) {
 }
 
 int App::main(int argc, char** argv) {
+	debug("main()\n");
 	init(argc, argv);
 	looping = true;
 	update_loop_thread = new std::thread(&App::update_loop, this);
 	main_loop();
 	looping = false;
-	update_loop_thread->detach();
 	return exit_code;
 }
 
 void App::init(unused int argc, unused char** argv) {
-	window = SDL_CreateWindow(
-		"Fractals", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 0, 0,
-		SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS
-			| SDL_WINDOW_RESIZABLE);
+	debug("init()\n");
+	window = SDL_CreateWindow("Fractals", SDL_WINDOWPOS_CENTERED,
+							  SDL_WINDOWPOS_CENTERED, 1280, 720,
+							  SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (window == NULL)
 		errx(EXIT_FAILURE, "error could not create a window: '%s'",
 			 SDL_GetError());
+	if (fullscreen) toggle_fullscreen();
 	renderer = SDL_CreateRenderer(
 		window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (renderer == NULL)
@@ -83,6 +91,7 @@ void App::init(unused int argc, unused char** argv) {
 }
 
 void App::update_loop(void) {
+	debug("update_loop()\n");
 	while (looping) {
 		updates();
 	}
@@ -93,10 +102,13 @@ void App::updates(void) {
 }
 
 void App::main_loop(void) {
+	debug("main_loop()\n");
 	while (looping) {
 		auto start = std::chrono::high_resolution_clock::now();
 		events();
+		if (!looping) break;
 		draw();
+		if (!looping) break;
 		auto end = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double, std::milli> elapsed = end - start;
 		std::chrono::duration<double, std::milli> to_wait =
@@ -113,13 +125,14 @@ void App::events(void) {
 	while (looping && SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_QUIT:
-			looping = false;
+			quit();
 			break;
 		case SDL_WINDOWEVENT:
 			switch (event.window.event) {
 			case SDL_WINDOWEVENT_SIZE_CHANGED:
 				w = event.window.data1;
-				h = event.window.data1;
+				h = event.window.data2;
+				debug("events(): resize event (%i, %i)\n", w, h);
 				break;
 			default:
 				break;
@@ -128,7 +141,10 @@ void App::events(void) {
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.sym) {
 			case SDLK_ESCAPE:
-				looping = false;
+				quit();
+				break;
+			case SDLK_F11:
+				toggle_fullscreen();
 				break;
 			default:
 				break;
@@ -143,6 +159,42 @@ void App::events(void) {
 void App::draw(void) {
 	SDL_RenderClear(renderer);
 	SDL_RenderPresent(renderer);
+}
+
+void App::clean(void) { debug("clean()\n"); }
+
+void App::quit(void) {
+	if (std::this_thread::get_id() == update_loop_thread->get_id())
+		errx(EXIT_FAILURE, "can't quit inside the update loop");
+	debug("quit()\n");
+	looping = false;
+	update_loop_thread->join();
+	clean();
+}
+
+void App::force_quit(void) {
+	if (std::this_thread::get_id() == update_loop_thread->get_id())
+		errx(EXIT_FAILURE, "can't force quit inside the update loop");
+	debug("force_quit()\n");
+	looping = false;
+	update_loop_thread->detach();
+}
+
+void App::toggle_fullscreen(void) {
+	fullscreen = !fullscreen;
+	SDL_HideWindow(window);
+	SDL_SetWindowBordered(window, fullscreen ? SDL_FALSE : SDL_TRUE);
+	SDL_DisplayMode mode;
+	SDL_GetDesktopDisplayMode(SDL_GetWindowDisplayIndex(window), &mode);
+	if (fullscreen) {
+		SDL_SetWindowPosition(window, 0, 0);
+		SDL_SetWindowSize(window, mode.w, mode.h);
+	} else {
+		int tw = mode.w / 2, th = mode.h / 2;
+		SDL_SetWindowSize(window, tw, th);
+		SDL_SetWindowPosition(window, (mode.w - tw) / 2, (mode.h - th) / 2);
+	}
+	SDL_ShowWindow(window);
 }
 
 } // namespace fractals

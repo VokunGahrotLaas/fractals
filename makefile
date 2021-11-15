@@ -9,7 +9,7 @@ ADDITIONAL_FLAGS = -Wall -Wextra $(Werror) -Wconversion $(Wpedantic) -std=$(std)
 mode = release
 ifeq ($(mode),debug)
 O = 0
-MODE_FLAGS = -g
+MODE_FLAGS = -g -DDEBUG_FRACTALS
 else
 O = 2
 MODE_FLAGS = -s

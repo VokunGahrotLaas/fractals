@@ -22,3 +22,9 @@
 #define vector_size(sz) __attribute__((vector_size(sz)))
 
 #define force_inline always_inline inline
+
+#ifdef DEBUG_FRACTALS
+#define debug(...) do { printf(__VA_ARGS__); } while (false);
+#else // DEBUG_FRACTALS
+#define debug(...) /* NOTHING */
+#endif // DEBUG_FRACTALS
