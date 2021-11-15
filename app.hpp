@@ -85,14 +85,6 @@ void App::init(unused int argc, unused char** argv) {
 void App::update_loop(void) {
 	while (looping) {
 		updates();
-		if (SDL_SetWindowOpacity(window, 1.f) != 0)
-			errx(EXIT_FAILURE, "opacity");
-		std::this_thread::sleep_for(
-			std::chrono::duration<double, std::milli>(1000));
-		if (SDL_SetWindowOpacity(window, 0.f) != 0)
-			errx(EXIT_FAILURE, "opacity");
-		std::this_thread::sleep_for(
-			std::chrono::duration<double, std::milli>(1000));
 	}
 }
 
