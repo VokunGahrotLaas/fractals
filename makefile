@@ -1,4 +1,4 @@
-CX = g++
+CXX = g++
 args =
 break =
 std = gnu++20
@@ -39,14 +39,14 @@ endef
 RAW_LIBS = sdl2 SDL2_image
 INCLUDES = $(shell pkg-config --cflags $(RAW_LIBS))
 LIBS = $(shell pkg-config --libs $(RAW_LIBS))
-CFLAGS = $(BASE_FLAGS) $(INCLUDES) $(LIBS)
+CXXFLAGS = $(BASE_FLAGS) $(INCLUDES) $(LIBS)
 SRC = $(wildcard *.cpp)
 EXEC = fractals
 
 all: $(EXEC)
 
 $(EXEC): $(SRC)
-	@$(CX) -o $@ $^ $(CFLAGS)
+	@$(CXX) -o $@ $^ $(CXXFLAGS)
 
 run: $(EXEC)
 	@echo "Running $<..."
