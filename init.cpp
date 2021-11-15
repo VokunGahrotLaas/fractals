@@ -8,8 +8,8 @@
 // fractals
 #include "macros.hpp"
 
-constructor static void sdl_init(void);
-destructor static void sdl_quit(void);
+f_constructor static void sdl_init(void);
+f_destructor static void sdl_quit(void);
 
 static void sdl_init(void) {
 	srand((unsigned)time(nullptr));

@@ -9,6 +9,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 // fractals
+#include "keyboard.hpp"
 #include "macros.hpp"
 #include "window.hpp"
 
@@ -16,25 +17,24 @@ namespace fractals {
 
 class App {
 public:
-	App(void);
+	App(int argc = 0, char** argv = nullptr);
 	virtual ~App(void);
-	int main(int argc, char** argv);
+	int main(void);
 
 protected:
-	void init(int argc, char** argv);
 	void update_loop(void);
 	void updates(void);
 	void main_loop(void);
 	void events(void);
 	void draw(void);
 
-	void clean(void);
 	void quit(void);
 	void force_quit(void);
 
 	void toggle_fullscreen(void);
 
 	Window window;
+	Keyboard keyboard;
 	std::thread* update_loop_thread;
 	bool looping;
 	int exit_code;
@@ -45,19 +45,19 @@ protected:
 
 namespace fractals {
 
-App::App(void)
-	: window(), update_loop_thread(nullptr), looping(false),
+App::App(f_unused int argc, f_unused char** argv)
+	: window(), keyboard(), update_loop_thread(nullptr), looping(false),
 	  exit_code(EXIT_SUCCESS), framerate(60) {
-	//
+	f_debug_func_name();
 }
 
 App::~App(void) {
 	if (update_loop_thread) delete update_loop_thread;
+	f_debug_func_name();
 }
 
-int App::main(int argc, char** argv) {
-	debug("main()\n");
-	init(argc, argv);
+int App::main(void) {
+	f_debug_func_name();
 	looping = true;
 	update_loop_thread = new std::thread(&App::update_loop, this);
 	main_loop();
@@ -65,13 +65,8 @@ int App::main(int argc, char** argv) {
 	return exit_code;
 }
 
-void App::init(unused int argc, unused char** argv) {
-	debug("init()\n");
-	window.init();
-}
-
 void App::update_loop(void) {
-	debug("update_loop()\n");
+	f_debug_func_name();
 	while (looping) {
 		updates();
 	}
@@ -82,7 +77,7 @@ void App::updates(void) {
 }
 
 void App::main_loop(void) {
-	debug("main_loop()\n");
+	f_debug_func_name();
 	while (looping) {
 		auto start = std::chrono::high_resolution_clock::now();
 		events();
@@ -130,21 +125,18 @@ void App::events(void) {
 
 void App::draw(void) { window.draw(); }
 
-void App::clean(void) { debug("clean()\n"); }
-
 void App::quit(void) {
 	if (std::this_thread::get_id() == update_loop_thread->get_id())
 		errx(EXIT_FAILURE, "can't quit inside the update loop");
-	debug("quit()\n");
+	f_debug_func_name();
 	looping = false;
 	update_loop_thread->join();
-	clean();
 }
 
 void App::force_quit(void) {
 	if (std::this_thread::get_id() == update_loop_thread->get_id())
 		errx(EXIT_FAILURE, "can't force quit inside the update loop");
-	debug("force_quit()\n");
+	f_debug_func_name();
 	looping = false;
 	update_loop_thread->detach();
 }

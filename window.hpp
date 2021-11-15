@@ -15,7 +15,6 @@ public:
 	Window(void);
 	virtual ~Window(void);
 
-	void init(void);
 	void event(SDL_WindowEvent event);
 	void draw(void);
 
@@ -37,15 +36,7 @@ namespace fractals {
 Window::Window(void)
 	: m_window(nullptr), m_renderer(nullptr), m_w(1280), m_h(720),
 	  m_fullscreen(true), m_background_color({ 0, 0, 0, 255 }) {
-	//
-}
-
-Window::~Window(void) {
-	if (m_window) SDL_DestroyWindow(m_window);
-	if (m_renderer) SDL_DestroyRenderer(m_renderer);
-}
-
-void Window::init(void) {
+	f_debug_func_name();
 	m_window = SDL_CreateWindow("Fractals", SDL_WINDOWPOS_CENTERED,
 								SDL_WINDOWPOS_CENTERED, 1280, 720,
 								SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
@@ -64,12 +55,18 @@ void Window::init(void) {
 						   m_background_color.g, m_background_color.b, 255);
 }
 
+Window::~Window(void) {
+	f_debug_func_name();
+	if (m_window) SDL_DestroyWindow(m_window);
+	if (m_renderer) SDL_DestroyRenderer(m_renderer);
+}
+
 void Window::event(SDL_WindowEvent event) {
 	switch (event.event) {
 	case SDL_WINDOWEVENT_SIZE_CHANGED:
 		m_w = event.data1;
 		m_h = event.data2;
-		debug("events(): resize event (%i, %i)\n", m_w, m_h);
+		f_debug_func("resize event (%i, %i)\n", m_w, m_h);
 		break;
 	default:
 		break;
@@ -82,6 +79,7 @@ void Window::draw(void) {
 }
 
 void Window::toggle_fullscreen(void) {
+	f_debug_func_name();
 	m_fullscreen = !m_fullscreen;
 	SDL_HideWindow(m_window);
 	SDL_SetWindowBordered(m_window, m_fullscreen ? SDL_FALSE : SDL_TRUE);
