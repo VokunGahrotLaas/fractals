@@ -76,11 +76,13 @@ void App::init(unused int argc, unused char** argv) {
 	debug("init()\n");
 	window = SDL_CreateWindow("Fractals", SDL_WINDOWPOS_CENTERED,
 							  SDL_WINDOWPOS_CENTERED, 1280, 720,
-							  SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+							  SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 	if (window == NULL)
 		errx(EXIT_FAILURE, "error could not create a window: '%s'",
 			 SDL_GetError());
-	if (fullscreen) toggle_fullscreen();
+	fullscreen = !fullscreen;
+	if (!fullscreen) toggle_fullscreen();
+	SDL_ShowWindow(window);
 	renderer = SDL_CreateRenderer(
 		window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (renderer == NULL)

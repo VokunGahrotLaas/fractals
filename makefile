@@ -46,7 +46,7 @@ EXEC = fractals
 all: $(EXEC)
 
 $(EXEC): $(SRC)
-	@$(CXX) -o $@ $^ $(CXXFLAGS)
+	$(CXX) -o $@ $^ $(CXXFLAGS)
 
 run: $(EXEC)
 	@echo "Running $<..."
