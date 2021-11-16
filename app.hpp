@@ -31,11 +31,9 @@ protected:
 	void quit(void);
 	void force_quit(void);
 
-	void toggle_fullscreen(void);
-
 	Window window;
 	Keyboard keyboard;
-	std::thread* update_loop_thread;
+	std::thread update_loop_thread;
 	bool looping;
 	int exit_code;
 	double framerate;
@@ -46,30 +44,31 @@ protected:
 namespace fractals {
 
 App::App(f_unused int argc, f_unused char** argv)
-	: window(), keyboard(), update_loop_thread(nullptr), looping(false),
+	: window(), keyboard(), update_loop_thread(), looping(false),
 	  exit_code(EXIT_SUCCESS), framerate(60) {
 	f_debug_func_name();
 }
 
 App::~App(void) {
-	if (update_loop_thread) delete update_loop_thread;
 	f_debug_func_name();
 }
 
 int App::main(void) {
-	f_debug_func_name();
+	f_debug_func("begin");
 	looping = true;
-	update_loop_thread = new std::thread(&App::update_loop, this);
+	update_loop_thread = std::thread(&App::update_loop, this);
 	main_loop();
 	looping = false;
+	f_debug_func("end");
 	return exit_code;
 }
 
 void App::update_loop(void) {
-	f_debug_func_name();
+	f_debug_func("begin");
 	while (looping) {
 		updates();
 	}
+	f_debug_func("end");
 }
 
 void App::updates(void) {
@@ -77,22 +76,29 @@ void App::updates(void) {
 }
 
 void App::main_loop(void) {
-	f_debug_func_name();
-	while (looping) {
-		auto start = std::chrono::high_resolution_clock::now();
+	f_debug_func("begin");
+	auto start = std::chrono::high_resolution_clock::now();
+	for (auto end = start; looping; start = end) {
 		events();
 		if (!looping) break;
 		draw();
 		if (!looping) break;
-		auto end = std::chrono::high_resolution_clock::now();
+		end = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double, std::milli> elapsed = end - start;
 		std::chrono::duration<double, std::milli> to_wait =
 			std::chrono::milliseconds(1000) / framerate - elapsed;
+		if (to_wait < decltype(to_wait)::zero()) {
+			f_debug_func("frame took too long (%lg > %lg)", elapsed.count(),
+						 1000. / framerate);
+			continue;
+		}
 		std::this_thread::sleep_for(
 			std::max(decltype(to_wait)::zero(), to_wait));
+		end = std::chrono::high_resolution_clock::now();
 		// std::cout << "Elapsed: " << elapsed.count() << "ms" << std::endl;
 		// std::cout << "To Wait: " << to_wait.count() << "ms" << std::endl;
 	}
+	f_debug_func("end");
 }
 
 void App::events(void) {
@@ -113,6 +119,15 @@ void App::events(void) {
 			case SDLK_F11:
 				window.toggle_fullscreen();
 				break;
+			case SDLK_q:
+				force_quit();
+				break;
+			case SDLK_c: {
+				Uint8 r = (Uint8)rand(), g = (Uint8)rand(), b = (Uint8)rand();
+				window.background_color({ r, g, b, 255 });
+				f_debug_func("changed color: %.2hhx%.2hhx%.2hhx", r, g, b);
+				break;
+			}
 			default:
 				break;
 			}
@@ -123,22 +138,25 @@ void App::events(void) {
 	}
 }
 
-void App::draw(void) { window.draw(); }
+void App::draw(void) {
+	window.clear();
+	// draw
+	window.present();
+}
 
 void App::quit(void) {
-	if (std::this_thread::get_id() == update_loop_thread->get_id())
+	if (std::this_thread::get_id() == update_loop_thread.get_id())
 		errx(EXIT_FAILURE, "can't quit inside the update loop");
 	f_debug_func_name();
 	looping = false;
-	update_loop_thread->join();
+	update_loop_thread.join();
 }
 
 void App::force_quit(void) {
-	if (std::this_thread::get_id() == update_loop_thread->get_id())
+	if (std::this_thread::get_id() == update_loop_thread.get_id())
 		errx(EXIT_FAILURE, "can't force quit inside the update loop");
 	f_debug_func_name();
-	looping = false;
-	update_loop_thread->detach();
+	quick_exit(exit_code);
 }
 
 } // namespace fractals

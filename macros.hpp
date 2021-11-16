@@ -24,7 +24,11 @@
 #define f_force_inline always_inline inline
 
 #ifdef DEBUG_FRACTALS
-#define f_debug(...) printf(__VA_ARGS__);
+#define f_debug(...)                                                           \
+	do {                                                                       \
+		printf(__VA_ARGS__);                                                   \
+		putc('\n', stdout);                                                    \
+	} while (false);
 #define f_debug_func(...)                                                      \
 	do {                                                                       \
 		printf("%s: ", __PRETTY_FUNCTION__);                                   \

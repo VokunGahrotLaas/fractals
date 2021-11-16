@@ -16,9 +16,12 @@ public:
 	virtual ~Window(void);
 
 	void event(SDL_WindowEvent event);
-	void draw(void);
-
 	void toggle_fullscreen(void);
+	void clear(void);
+	void present(void);
+
+	SDL_Color const& background_color(void) const;
+	void background_color(SDL_Color color);
 
 protected:
 	SDL_Window* m_window;
@@ -45,14 +48,15 @@ Window::Window(void)
 			 SDL_GetError());
 	m_fullscreen = !m_fullscreen;
 	if (!m_fullscreen) toggle_fullscreen();
-	SDL_ShowWindow(m_window);
 	m_renderer = SDL_CreateRenderer(
 		m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (m_renderer == NULL)
 		errx(EXIT_FAILURE, "error could not create a renderer: '%s'",
 			 SDL_GetError());
-	SDL_SetRenderDrawColor(m_renderer, m_background_color.r,
-						   m_background_color.g, m_background_color.b, 255);
+	background_color(m_background_color);
+	clear();
+	present();
+	SDL_ShowWindow(m_window);
 }
 
 Window::~Window(void) {
@@ -66,16 +70,20 @@ void Window::event(SDL_WindowEvent event) {
 	case SDL_WINDOWEVENT_SIZE_CHANGED:
 		m_w = event.data1;
 		m_h = event.data2;
-		f_debug_func("resize event (%i, %i)\n", m_w, m_h);
+		f_debug_func("resize event (%i, %i)", m_w, m_h);
 		break;
 	default:
 		break;
 	}
 }
 
-void Window::draw(void) {
-	SDL_RenderClear(m_renderer);
-	SDL_RenderPresent(m_renderer);
+SDL_Color const& Window::background_color(void) const {
+	return m_background_color;
+}
+
+void Window::background_color(SDL_Color color) {
+	SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+	m_background_color = color;
 }
 
 void Window::toggle_fullscreen(void) {
@@ -95,5 +103,9 @@ void Window::toggle_fullscreen(void) {
 	}
 	SDL_ShowWindow(m_window);
 }
+
+void Window::clear(void) { SDL_RenderClear(m_renderer); }
+
+void Window::present(void) { SDL_RenderPresent(m_renderer); }
 
 } // namespace fractals
