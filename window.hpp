@@ -1,3 +1,6 @@
+#ifndef FRACTALS_WINDOW_H
+#define FRACTALS_WINDOW_H
+
 // stdlib
 #include <iostream>
 // libc
@@ -20,8 +23,16 @@ public:
 	void clear(void);
 	void present(void);
 
+	void color(SDL_Color color);
+	SDL_Color color(void) const;
+
+	void draw_rect(SDL_Rect* rect);
+	void fill_rect(SDL_Rect* rect);
+
+	SDL_Color& background_color(void);
 	SDL_Color const& background_color(void) const;
-	void background_color(SDL_Color color);
+	int w(void) const;
+	int h(void) const;
 
 protected:
 	SDL_Window* m_window;
@@ -53,7 +64,6 @@ Window::Window(void)
 	if (m_renderer == NULL)
 		errx(EXIT_FAILURE, "error could not create a renderer: '%s'",
 			 SDL_GetError());
-	background_color(m_background_color);
 	clear();
 	present();
 	SDL_ShowWindow(m_window);
@@ -77,15 +87,6 @@ void Window::event(SDL_WindowEvent event) {
 	}
 }
 
-SDL_Color const& Window::background_color(void) const {
-	return m_background_color;
-}
-
-void Window::background_color(SDL_Color color) {
-	SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
-	m_background_color = color;
-}
-
 void Window::toggle_fullscreen(void) {
 	f_debug_func_name();
 	m_fullscreen = !m_fullscreen;
@@ -104,8 +105,39 @@ void Window::toggle_fullscreen(void) {
 	SDL_ShowWindow(m_window);
 }
 
-void Window::clear(void) { SDL_RenderClear(m_renderer); }
+void Window::clear(void) {
+	SDL_SetRenderDrawColor(m_renderer, m_background_color.r,
+						   m_background_color.g, m_background_color.b,
+						   m_background_color.a);
+	SDL_RenderClear(m_renderer);
+}
 
 void Window::present(void) { SDL_RenderPresent(m_renderer); }
 
+void Window::color(SDL_Color color) {
+	SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+}
+
+SDL_Color Window::color(void) const {
+	SDL_Color color;
+	SDL_GetRenderDrawColor(m_renderer, &color.r, &color.g, &color.b, &color.a);
+	return color;
+}
+
+void Window::draw_rect(SDL_Rect* rect) { SDL_RenderDrawRect(m_renderer, rect); }
+
+void Window::fill_rect(SDL_Rect* rect) { SDL_RenderFillRect(m_renderer, rect); }
+
+SDL_Color& Window::background_color(void) { return m_background_color; }
+
+SDL_Color const& Window::background_color(void) const {
+	return m_background_color;
+}
+
+int Window::w(void) const { return m_w; }
+
+int Window::h(void) const { return m_h; }
+
 } // namespace fractals
+
+#endif // FRACTALS_WINDOW_H

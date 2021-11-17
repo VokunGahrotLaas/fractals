@@ -1,56 +1,26 @@
-// stdlib
-#include <chrono>
-#include <exception>
-#include <iostream>
-#include <thread>
-// libc
-#include <err.h>
-// SDL2
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#ifndef FRACTALS_APP_H
+#define FRACTALS_APP_H
+
 // fractals
-#include "keyboard.hpp"
-#include "macros.hpp"
-#include "window.hpp"
-
-namespace fractals {
-
-class App {
-public:
-	App(int argc = 0, char** argv = nullptr);
-	virtual ~App(void);
-	int main(void);
-
-protected:
-	void update_loop(void);
-	void updates(void);
-	void main_loop(void);
-	void events(void);
-	void draw(void);
-
-	void quit(void);
-	void force_quit(void);
-
-	Window window;
-	Keyboard keyboard;
-	std::thread update_loop_thread;
-	bool looping;
-	int exit_code;
-	double framerate;
-};
-
-} // namespace fractals
+#include "app_declatation.hpp"
+#include "sprites/player.hpp"
+#include "sprites/rect.hpp"
+#include "sprites/sprite.hpp"
+#include "sprites/updatable_sprite.hpp"
 
 namespace fractals {
 
 App::App(f_unused int argc, f_unused char** argv)
-	: window(), keyboard(), update_loop_thread(), looping(false),
-	  exit_code(EXIT_SUCCESS), framerate(60) {
+	: window(), keyboard(), update_loop_thread(), looping(false), pause(false),
+	  exit_code(EXIT_SUCCESS), framerate(60), dynamic_sprites(), sprites(),
+	  updatable_sprites() {
 	f_debug_func_name();
 }
 
 App::~App(void) {
 	f_debug_func_name();
+	for (Sprite* sprite: dynamic_sprites)
+		delete sprite;
 }
 
 int App::main(void) {
@@ -66,20 +36,30 @@ int App::main(void) {
 void App::update_loop(void) {
 	f_debug_func("begin");
 	while (looping) {
-		updates();
+		if (!pause) update();
 	}
 	f_debug_func("end");
 }
 
-void App::updates(void) {
-	//
+void App::update(void) {
+	auto copy = updatable_sprites;
+	for (UpdatableSprite* sprite: copy)
+		if (updatable_sprites.contains(sprite)) sprite->update();
+	SDL_Color& color = window.background_color();
+	color.r = (Uint8)(color.r * 0.99);
+	color.g = (Uint8)(color.g * 0.99);
+	color.b = (Uint8)(color.b * 0.99);
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void App::main_loop(void) {
 	f_debug_func("begin");
 	auto start = std::chrono::high_resolution_clock::now();
 	for (auto end = start; looping; start = end) {
-		events();
+		if (pause)
+			pause_events();
+		else
+			events();
 		if (!looping) break;
 		draw();
 		if (!looping) break;
@@ -113,19 +93,37 @@ void App::events(void) {
 			break;
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.sym) {
-			case SDLK_ESCAPE:
-				quit();
-				break;
 			case SDLK_F11:
 				window.toggle_fullscreen();
 				break;
+			case SDLK_ESCAPE:
+			case SDLK_p:
+				toggle_pause();
+				break;
 			case SDLK_q:
-				force_quit();
+				if (keyboard.is_key_pressed(SDLK_LCTRL)
+					| keyboard.is_key_pressed(SDLK_RCTRL))
+					quit();
 				break;
 			case SDLK_c: {
 				Uint8 r = (Uint8)rand(), g = (Uint8)rand(), b = (Uint8)rand();
-				window.background_color({ r, g, b, 255 });
+				window.background_color() = { r, g, b, 255 };
 				f_debug_func("changed color: %.2hhx%.2hhx%.2hhx", r, g, b);
+				break;
+			}
+			case SDLK_r: {
+				SDL_Rect r;
+				r.w = window.w() / 10;
+				r.h = window.h() / 10;
+				r.x = window.w() / 2 - r.w / 2;
+				r.y = window.h() / 2 - r.h / 2;
+				dynamic_sprites.insert(new Player(*this, r, f_rand_color()));
+				break;
+			}
+			case SDLK_d: {
+				for (Sprite* sprite: dynamic_sprites)
+					delete sprite;
+				dynamic_sprites.clear();
 				break;
 			}
 			default:
@@ -138,9 +136,44 @@ void App::events(void) {
 	}
 }
 
+void App::pause_events(void) {
+	SDL_Event event;
+	while (looping && SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_QUIT:
+			quit();
+			break;
+		case SDL_WINDOWEVENT:
+			window.event(event.window);
+			break;
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym) {
+			case SDLK_F11:
+				window.toggle_fullscreen();
+				break;
+			case SDLK_ESCAPE:
+			case SDLK_p:
+				toggle_pause();
+				break;
+			case SDLK_q:
+				if (keyboard.is_key_pressed(SDLK_LCTRL)
+					| keyboard.is_key_pressed(SDLK_RCTRL))
+					quit();
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 void App::draw(void) {
 	window.clear();
-	// draw
+	for (Sprite* sprite: sprites)
+		sprite->draw(window);
 	window.present();
 }
 
@@ -159,4 +192,11 @@ void App::force_quit(void) {
 	quick_exit(exit_code);
 }
 
+void App::toggle_pause(void) {
+	pause = !pause;
+	f_debug_func("%s", pause ? "paused" : "unpaused");
+}
+
 } // namespace fractals
+
+#endif // FRACTALS_APP_H

@@ -40,3 +40,6 @@
 #define f_debug_func(...)	/**/
 #define f_debug_func_name() /**/
 #endif						// DEBUG_FRACTALS
+
+#define f_rand_color()                                                         \
+	(SDL_Color({ (Uint8)rand(), (Uint8)rand(), (Uint8)rand(), 255 }))

@@ -1,3 +1,6 @@
+#ifndef FRACTALS_KEYBOARD_H
+#define FRACTALS_KEYBOARD_H
+
 // stdlib
 #include <iostream>
 // libc
@@ -41,3 +44,5 @@ bool Keyboard::is_key_pressed(SDL_Keycode code) const {
 }
 
 } // namespace fractals
+
+#endif // FRACTALS_KEYBOARD_H
