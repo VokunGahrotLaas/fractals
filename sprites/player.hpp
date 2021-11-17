@@ -6,16 +6,13 @@
 
 namespace fractals {
 
-class Player: public UpdatableSprite {
+class Player: virtual public UpdatableSprite, virtual public Rect {
 public:
 	Player(App& app, SDL_Rect rect, SDL_Color color);
 	~Player(void) override;
 
 	void draw(Window& window) override;
 	void update(void) override;
-
-protected:
-	Rect rect;
 };
 
 } // namespace fractals
@@ -23,21 +20,19 @@ protected:
 namespace fractals {
 
 Player::Player(App& app, SDL_Rect rect, SDL_Color color)
-	: UpdatableSprite(app), rect(app, rect, color, Rect::Fill) {
+	: Sprite(app), UpdatableSprite(app), Rect(app, rect, color, Rect::Fill) {
 	f_debug_func("%zu", id());
 }
 
-Player::~Player(void) {
-	f_debug_func("%zu", id());
-}
+Player::~Player(void) { f_debug_func("%zu", id()); }
 
-void Player::draw(Window& window) { rect.draw(window); }
+void Player::draw(Window& window) { Rect::draw(window); }
 
 void Player::update(void) {
-	rect.rect().x += (int)app.keyboard.is_key_pressed(SDLK_RIGHT)
-					 - (int)app.keyboard.is_key_pressed(SDLK_LEFT);
-	rect.rect().y += (int)app.keyboard.is_key_pressed(SDLK_DOWN)
-					 - (int)app.keyboard.is_key_pressed(SDLK_UP);
+	m_rect.x += (int)app.keyboard.is_key_pressed(SDLK_RIGHT)
+				- (int)app.keyboard.is_key_pressed(SDLK_LEFT);
+	m_rect.y += (int)app.keyboard.is_key_pressed(SDLK_DOWN)
+				- (int)app.keyboard.is_key_pressed(SDLK_UP);
 }
 
 } // namespace fractals

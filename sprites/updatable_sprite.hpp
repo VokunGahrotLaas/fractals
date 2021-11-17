@@ -10,7 +10,7 @@
 
 namespace fractals {
 
-class UpdatableSprite: public Sprite {
+class UpdatableSprite: virtual public Sprite {
 public:
 	UpdatableSprite(App& app);
 	~UpdatableSprite(void) override;
@@ -24,10 +24,12 @@ public:
 namespace fractals {
 
 UpdatableSprite::UpdatableSprite(App& app): Sprite(app) {
+	f_debug_func("%zu", id());
 	app.updatable_sprites.insert(this);
 }
 
 UpdatableSprite::~UpdatableSprite(void) {
+	f_debug_func("%zu", id());
 	app.updatable_sprites.erase(this);
 }
 
